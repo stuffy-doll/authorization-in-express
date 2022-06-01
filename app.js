@@ -1,8 +1,10 @@
-
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const { restoreUser } = require('./auth');
 
+const { sessionSecret } = require('./config');
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
 
@@ -10,14 +12,23 @@ const app = express();
 
 app.set('view engine', 'pug');
 app.use(morgan('dev'));
-app.use(cookieParser());
+app.use(cookieParser(sessionSecret));
+app.use(
+  session({
+    name: 'reading-list.sid',
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 app.use(express.urlencoded({ extended: false }));
+app.use(restoreUser);
 app.use(bookRoutes);
 app.use(userRoutes);
 
 // Catch unhandled requests and forward to error handler.
 app.use((req, res, next) => {
-  const err = new Error('The requested page couldn\'t be found.');
+  const err = new Error("The requested page couldn't be found.");
   err.status = 404;
   next(err);
 });
